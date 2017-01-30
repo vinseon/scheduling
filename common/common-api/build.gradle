@@ -1,6 +1,7 @@
 dependencies {
     compile "org.objectweb.proactive:programming-annotation:${programmingVersion}"
     compile "org.objectweb.proactive:programming-util:${programmingVersion}"
+    compile "org.apache.shiro:shiro-core:${shiroVersion}"
 
     testRuntime 'org.jruby:jruby-complete:9.0.5.0'
     testRuntime 'org.python:jython-standalone:2.7.0'

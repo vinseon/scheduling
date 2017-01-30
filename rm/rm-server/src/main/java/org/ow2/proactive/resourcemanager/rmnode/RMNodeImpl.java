@@ -27,17 +27,16 @@ package org.ow2.proactive.resourcemanager.rmnode;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.Permission;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
+import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.permission.WildcardPermission;
 import org.objectweb.proactive.core.descriptor.data.VirtualNode;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
-import org.ow2.proactive.permissions.PrincipalPermission;
 import org.ow2.proactive.resourcemanager.authentication.Client;
 import org.ow2.proactive.resourcemanager.common.NodeState;
 import org.ow2.proactive.resourcemanager.nodesource.NodeSource;
@@ -376,11 +375,13 @@ public class RMNodeImpl extends AbstractRMNode {
 
     /**
      * {@inheritDoc}
+     * TODO: Shiro will not re-use cutom Permission classes (PrincipalPermission, ClientPermission)
      */
     @Override
     public Permission getAdminPermission() {
-        return new PrincipalPermission(provider.getName(),
-                                       provider.getSubject().getPrincipals(UserNamePrincipal.class));
+        //return new PrincipalPermission(provider.getName(),
+        //                               provider.getSubject().getPrincipals(UserNamePrincipal.class));
+        return new WildcardPermission("admin");
     }
 
     /**

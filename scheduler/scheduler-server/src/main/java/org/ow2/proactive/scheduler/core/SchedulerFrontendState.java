@@ -38,6 +38,7 @@ import java.util.TimerTask;
 import java.util.Vector;
 
 import org.apache.log4j.Logger;
+import org.apache.shiro.authz.permission.WildcardPermission;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.mop.MOP;
@@ -74,10 +75,6 @@ import org.ow2.proactive.scheduler.job.InternalJob;
 import org.ow2.proactive.scheduler.job.InternalJobFactory;
 import org.ow2.proactive.scheduler.job.SchedulerUserInfo;
 import org.ow2.proactive.scheduler.job.UserIdentificationImpl;
-import org.ow2.proactive.scheduler.permissions.ChangePolicyPermission;
-import org.ow2.proactive.scheduler.permissions.ChangePriorityPermission;
-import org.ow2.proactive.scheduler.permissions.ConnectToResourceManagerPermission;
-import org.ow2.proactive.scheduler.permissions.HandleOnlyMyJobsPermission;
 import org.ow2.proactive.scheduler.util.JobLogger;
 import org.ow2.proactive.scheduler.util.TaskLogger;
 
@@ -364,7 +361,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
      */
     synchronized void handleOnlyMyJobsPermission(boolean myOnly, UserIdentificationImpl ui, String errorMessage)
             throws PermissionException {
-        ui.checkPermission(new HandleOnlyMyJobsPermission(myOnly),
+        ui.checkPermission(new WildcardPermission("handleOnlyMyJobs:" + myOnly),
                            ui.getUsername() + " does not have permissions to handle other users jobs (" + errorMessage +
                                                                    ")");
     }
@@ -453,7 +450,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         // verifying that the user has right to set the given priority to his
         // job.
         try {
-            ident.checkPermission(new ChangePriorityPermission(job.getPriority().ordinal()),
+            ident.checkPermission(new WildcardPermission("changePriority:" + job.getPriority().ordinal()),
                                   ident.getUsername() + " does not have rights to set job priority " +
                                                                                              job.getPriority());
         } catch (PermissionException ex) {
@@ -496,7 +493,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         final MethodCallPermission methodCallPermission = new MethodCallPermission(fullMethodName);
 
         try {
-            ident.getUser().checkPermission(methodCallPermission, permissionMsg);
+            ident.getUser().checkPermission(new WildcardPermission("methodCall:" + methodName), permissionMsg);
         } catch (PermissionException ex) {
             logger.warn(permissionMsg);
             throw ex;
@@ -582,7 +579,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
                                                    .getUser();
 
         try {
-            ui.checkPermission(new ChangePriorityPermission(priority.getPriority()),
+            ui.checkPermission(new WildcardPermission("changePriority:" + priority.getPriority()),
                                ui.getUsername() + " does not have permissions to set job priority to " + priority);
         } catch (PermissionException ex) {
             logger.info(ex.getMessage());
@@ -701,7 +698,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         renewUserSession(id, ident);
 
         try {
-            ident.checkPermission(new ChangePolicyPermission(),
+            ident.checkPermission(new WildcardPermission("changePolicy"),
                                   ident.getUsername() + " does not have permissions to change the policy of the scheduler");
         } catch (PermissionException ex) {
             logger.info(ex.getMessage());
@@ -717,7 +714,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         renewUserSession(id, ident);
 
         try {
-            ident.checkPermission(new ConnectToResourceManagerPermission(),
+            ident.checkPermission(new WildcardPermission("connectToRessourceManager"),
                                   ident.getUsername() + " does not have permissions to change RM in the scheduler");
         } catch (PermissionException ex) {
             logger.info(ex.getMessage());
@@ -879,11 +876,6 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
 
     /**
      * Dispatch the job state updated event
-     * 
-     * @param owner
-     *            the owner of this job
-     * @param notification
-     *            the data to send to every client
      */
     private void dispatchJobUpdatedFullData(JobState job) {
         try {

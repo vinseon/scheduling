@@ -26,11 +26,10 @@
 package org.ow2.proactive.resourcemanager.authentication;
 
 import java.io.Serializable;
-import java.security.Permission;
-import java.security.PrivilegedAction;
 
-import javax.security.auth.Subject;
-
+import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.authz.Permission;
+import org.apache.shiro.subject.Subject;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.body.UniversalBody;
@@ -39,7 +38,6 @@ import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.mop.Proxy;
 import org.objectweb.proactive.core.mop.StubObject;
 import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
 import org.ow2.proactive.resourcemanager.core.history.UserHistory;
 
 
@@ -98,8 +96,8 @@ public class Client implements Serializable {
         this.pingable = pingable;
 
         if (subject != null) {
-            UserNamePrincipal unPrincipal = subject.getPrincipals(UserNamePrincipal.class).iterator().next();
-            this.name = unPrincipal.getName();
+            // replaced getPrincipals(UserNamePrincipal.class) by Shiro Principal (should return a String for now)
+            this.name = (String) subject.getPrincipal();
         }
         if (pingable) {
             Request r = PAActiveObject.getContext().getCurrentRequest();
@@ -234,16 +232,9 @@ public class Client implements Serializable {
      */
     public boolean checkPermission(final Permission permission, String errorMessage) {
         try {
-            Subject.doAsPrivileged(subject, new PrivilegedAction<Object>() {
-                public Object run() {
-                    SecurityManager sm = System.getSecurityManager();
-                    if (sm != null) {
-                        sm.checkPermission(permission);
-                    }
-                    return null;
-                }
-            }, null);
-        } catch (SecurityException ex) {
+            // Check permission through Shiro
+            subject.checkPermission(permission);
+        } catch (AuthorizationException ex) {
             throw new SecurityException(errorMessage);
         }
 

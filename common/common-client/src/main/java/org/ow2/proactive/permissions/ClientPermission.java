@@ -34,6 +34,9 @@ import org.ow2.proactive.policy.ClientsPolicy;
  * Base class of client specific permissions.
  * Allows to user wildcard in names and actions.
  * @see ClientsPolicy
+ *
+ * TODO: Not needed anymore using Shiro
+ *
  */
 public class ClientPermission extends BasicPermission {
 

@@ -30,7 +30,6 @@ import static org.ow2.proactive.resourcemanager.core.properties.PAResourceManage
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,6 +44,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
+import org.apache.shiro.authz.permission.WildcardPermission;
+import org.apache.shiro.subject.PrincipalCollection;
 import org.objectweb.proactive.ActiveObjectCreationException;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.InitActive;
@@ -63,10 +64,7 @@ import org.objectweb.proactive.core.node.NodeException;
 import org.objectweb.proactive.core.util.wrapper.BooleanWrapper;
 import org.objectweb.proactive.core.util.wrapper.IntWrapper;
 import org.objectweb.proactive.extensions.annotation.ActiveObject;
-import org.ow2.proactive.authentication.principals.IdentityPrincipal;
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
 import org.ow2.proactive.permissions.MethodCallPermission;
-import org.ow2.proactive.permissions.PrincipalPermission;
 import org.ow2.proactive.policy.ClientsPolicy;
 import org.ow2.proactive.resourcemanager.authentication.Client;
 import org.ow2.proactive.resourcemanager.authentication.RMAuthenticationImpl;
@@ -1171,15 +1169,13 @@ public class RMCore implements ResourceManager, InitActive, RunActive {
                 } else if (rmnode.isDown()) {
                     logger.warn("Node was down, it cannot be released");
                 } else {
-                    Set<? extends IdentityPrincipal> userPrincipal = rmnode.getOwner()
-                                                                           .getSubject()
-                                                                           .getPrincipals(UserNamePrincipal.class);
-                    Permission ownerPermission = new PrincipalPermission(rmnode.getOwner().getName(), userPrincipal);
+                    // TODO: User principal (UserNamePrincipal.class) replaced by generic getPrincipals from Shiro
+                    PrincipalCollection userPrincipal = rmnode.getOwner().getSubject()
+                            .getPrincipals();
+                    //Permission ownerPermission = new PrincipalPermission(rmnode.getOwner().getName(), userPrincipal);
                     try {
-                        caller.checkPermission(ownerPermission,
-                                               caller + " is not authorized to free node " +
-                                                                node.getNodeInformation().getURL());
-
+                        caller.checkPermission(new WildcardPermission("nodeOwner:" + rmnode.getHostName()),
+                                caller + " is not authorized to free node " + node.getNodeInformation().getURL());
                         if (rmnode.isToRemove()) {
                             removeNodeFromCoreAndSource(rmnode, caller);
                         } else {
@@ -1658,7 +1654,8 @@ public class RMCore implements ResourceManager, InitActive, RunActive {
         final String fullMethodName = RMCore.class.getName() + "." + methodName;
         final MethodCallPermission methodCallPermission = new MethodCallPermission(fullMethodName);
 
-        client.checkPermission(methodCallPermission, client + " is not authorized to call " + fullMethodName);
+        // TODO: methodCallPermission replaced by Shiro permission
+        client.checkPermission(new WildcardPermission("methodCall:"+methodName), client + " is not authorized to call " + fullMethodName);
         return client;
     }
 

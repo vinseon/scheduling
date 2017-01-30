@@ -25,13 +25,19 @@
  */
 package org.ow2.proactive.jmx;
 
-import javax.management.remote.JMXAuthenticator;
-import javax.security.auth.Subject;
-import javax.security.auth.login.LoginException;
+import java.security.Principal;
+import java.util.HashSet;
+import java.util.Set;
 
+import javax.management.remote.JMXAuthenticator;
+
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.subject.Subject;
 import org.ow2.proactive.authentication.Authentication;
 import org.ow2.proactive.authentication.crypto.CredData;
 import org.ow2.proactive.authentication.crypto.Credentials;
+
+import com.google.common.collect.Sets;
 
 
 /**
@@ -69,7 +75,7 @@ public final class JMXAuthenticatorImpl implements JMXAuthenticator {
      * @return a subject with the username as JMXPrincipal and the role as pubCredentials {@link javax.security.auth.Subject}
      * @param rawCredentials the credentials provided by the client
      */
-    public Subject authenticate(final Object rawCredentials) {
+    public javax.security.auth.Subject authenticate(final Object rawCredentials) {
         // If not an array of object do not give any clues just throw exception 
         if (rawCredentials == null || !(rawCredentials instanceof Object[])) {
             throw new SecurityException("Invalid credentials");
@@ -97,15 +103,22 @@ public final class JMXAuthenticatorImpl implements JMXAuthenticator {
             throw new SecurityException("Invalid credentials");
         }
         try {
+            // Create an mutable JAAS subject on the curent access control context and stores the Shiro subject
+            // in the JAAS subject's private credentials set
+            // INFO: Look at previous Subject creation method in UserIdentificationImpl class I guess :)
+            // TODO: Later on, implement a LoginModule which is actually a wrapper around the Shiro's Authenticator interface (extended by SecurityManagers)
             Subject s = this.authentication.authenticate(internalCredentials);
+            // TODO: Should disappear when understood!
             if (permissionChecker != null) {
                 boolean allowed = permissionChecker.checkPermission(internalCredentials);
                 if (!allowed) {
                     throw new SecurityException("Permission denied");
                 }
             }
-            return s;
-        } catch (LoginException e) {
+            Set<Subject> privJaasSubjectCreds = new HashSet<>();
+            privJaasSubjectCreds.add(s);
+            return new javax.security.auth.Subject(false, Sets.<Principal>newHashSet(), Sets.newHashSet(), privJaasSubjectCreds);
+        } catch (AuthenticationException e) {
             throw new SecurityException("Unable to authenticate " + username);
         }
     }

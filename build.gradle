@@ -270,6 +270,9 @@ dependencies {
 
     compile 'org.codehaus.groovy:groovy-all:2.4.6'
     compile 'commons-io:commons-io:2.5'
+
+    // SHIRO
+    compile "org.apache.shiro:shiro-core:${shiroVersion}"
 }
 
 task dist(type: Sync) {

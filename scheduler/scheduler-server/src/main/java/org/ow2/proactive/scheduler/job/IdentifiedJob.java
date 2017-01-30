@@ -26,10 +26,8 @@
 package org.ow2.proactive.scheduler.job;
 
 import java.io.Serializable;
-import java.security.Permission;
 
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
-import org.ow2.proactive.permissions.PrincipalPermission;
+import org.apache.shiro.authz.permission.WildcardPermission;
 import org.ow2.proactive.scheduler.common.exception.PermissionException;
 import org.ow2.proactive.scheduler.common.job.JobId;
 
@@ -86,18 +84,21 @@ public class IdentifiedJob implements Serializable {
      *
      * @param userId the user identification to check.
      * @return true if userId has permission to managed this job.
+     *
+     * TODO: check job permission against userId using Shiro
      */
     public boolean hasRight(UserIdentificationImpl userId) {
         if (userIdentification == null) {
             return false;
         }
 
-        Permission jobPermission = new PrincipalPermission(userIdentification.getUsername(),
-                                                           userIdentification.getSubject()
-                                                                             .getPrincipals(UserNamePrincipal.class));
+        // TODO: creating Permission object is useless now
+        //Permission jobPermission = new PrincipalPermission(userIdentification.getUsername(),
+        //                                                   userIdentification.getSubject()
+        //                                                                     .getPrincipals(UserNamePrincipal.class));
         try {
             //check method call
-            userId.checkPermission(jobPermission, "");
+            userId.checkPermission(new WildcardPermission("job"), "");
         } catch (PermissionException ex) {
             return false;
         }

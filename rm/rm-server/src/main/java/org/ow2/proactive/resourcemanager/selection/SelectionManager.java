@@ -33,6 +33,8 @@ import java.util.concurrent.*;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.MDC;
+import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.permission.WildcardPermission;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.api.PAFuture;
 import org.objectweb.proactive.core.node.Node;
@@ -445,6 +447,7 @@ public abstract class SelectionManager {
 
     /**
      * Removes exclusion nodes and nodes not accessible for the client
+     * TODO: Here we manually compute the list of accessibles nodes for a specific client
      */
     private List<RMNode> filterOut(List<RMNode> freeNodes, Criteria criteria, Client client) {
 
@@ -460,7 +463,8 @@ public abstract class SelectionManager {
             logger.debug("Node access token specified " + criteria.getNodeAccessToken());
 
             tokenPrincipal = new TokenPrincipal(criteria.getNodeAccessToken());
-            client.getSubject().getPrincipals().add(tokenPrincipal);
+            // TODO: Manually add the token to the client's principals (BUT WHY ?) => Shiro works differently (REALMS)
+            //client.getSubject().getPrincipals().add(tokenPrincipal);
         }
 
         List<RMNode> filteredList = new ArrayList<>();
@@ -469,7 +473,7 @@ public abstract class SelectionManager {
             // checking the permission
             try {
                 if (!clientPermissions.contains(node.getUserPermission())) {
-                    client.checkPermission(node.getUserPermission(),
+                    client.checkPermission(new WildcardPermission("nodeUserPermission:" + node.getHostName()),
                                            client + " is not authorized to get the node " + node.getNodeURL() +
                                                                      " from " + node.getNodeSource().getName());
                     clientPermissions.add(node.getUserPermission());

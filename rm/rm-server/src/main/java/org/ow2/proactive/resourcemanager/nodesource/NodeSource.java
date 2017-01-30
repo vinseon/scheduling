@@ -25,7 +25,6 @@
  */
 package org.ow2.proactive.resourcemanager.nodesource;
 
-import java.security.Permission;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -36,6 +35,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.log4j.Logger;
+import org.apache.shiro.authz.Permission;
+import org.apache.shiro.authz.permission.WildcardPermission;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.InitActive;
 import org.objectweb.proactive.RunActive;
@@ -50,8 +51,6 @@ import org.objectweb.proactive.core.util.wrapper.IntWrapper;
 import org.objectweb.proactive.extensions.annotation.ActiveObject;
 import org.ow2.proactive.authentication.principals.IdentityPrincipal;
 import org.ow2.proactive.authentication.principals.TokenPrincipal;
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
-import org.ow2.proactive.permissions.PrincipalPermission;
 import org.ow2.proactive.resourcemanager.authentication.Client;
 import org.ow2.proactive.resourcemanager.common.event.RMEventType;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
@@ -199,16 +198,21 @@ public class NodeSource implements InitActive, RunActive {
         this.nodes = Collections.synchronizedMap(new HashMap<String, Node>());
         this.downNodes = Collections.synchronizedMap(new HashMap<String, Node>());
 
+        // TODO: This needs to be replaced: having different variables for different permission levels is NOT the way Shiro works
         // node source admin permission
         // it's the PrincipalPermission of the user who created the node source
-        this.adminPermission = new PrincipalPermission(provider.getName(),
-                                                       provider.getSubject().getPrincipals(UserNamePrincipal.class));
+        // TODO: adminPermission managed by Shiro
+        //this.adminPermission = new PrincipalPermission(provider.getName(),
+        //                                               provider.getSubject().getPrincipals(UserNamePrincipal.class));
+        this.adminPermission = new WildcardPermission("nodeSource:admin");
         // creating node source provider permission
         // could be one of the following: PrincipalPermission (NS creator) or PrincipalPermission (NS creator groups)
         // or PrincipalPermission (anyone)
-        this.providerPermission = new PrincipalPermission(provider.getName(),
-                                                          nodeSourcePolicy.getProviderAccessType()
-                                                                          .getIdentityPrincipals(provider));
+        // TODO: providerPermission managed by Shiro
+        //this.providerPermission = new PrincipalPermission(provider.getName(),
+        //                                                  nodeSourcePolicy.getProviderAccessType()
+        //                                                                  .getIdentityPrincipals(provider));
+        this.providerPermission = new WildcardPermission("nodeSource:provider");
         this.nodeUserAccessType = nodeSourcePolicy.getUserAccessType();
     }
 
@@ -404,9 +408,10 @@ public class NodeSource implements InitActive, RunActive {
             throw new AddingNodesException(e);
         }
 
-        PrincipalPermission nodeAccessPermission = new PrincipalPermission(node.getNodeInformation().getURL(),
-                                                                           principals);
-        RMNodeImpl rmnode = new RMNodeImpl(node, stub, provider, nodeAccessPermission);
+        // TODO: nodeAccess permission managed by Shiro (?need to replace getName by getUrl to ensure uniq Principal?)
+        //PrincipalPermission nodeAccessPermission = new PrincipalPermission(node.getNodeInformation().getURL(),
+        //                                                                   principals);
+        RMNodeImpl rmnode = new RMNodeImpl(node, stub, provider, new WildcardPermission("nodeAccess:" + node.getNodeInformation().getName()));
 
         rmnode.setProtectedByToken(tokenInNode || tokenInNodeSource);
         return rmnode;

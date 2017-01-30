@@ -28,13 +28,19 @@ package org.ow2.proactive.authentication;
 import java.io.File;
 import java.security.KeyException;
 import java.security.PublicKey;
-import java.util.HashMap;
-import java.util.Map;
 
-import javax.security.auth.Subject;
-import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.AuthenticationException;
+import org.apache.shiro.authc.IncorrectCredentialsException;
+import org.apache.shiro.authc.LockedAccountException;
+import org.apache.shiro.authc.UnknownAccountException;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.config.IniSecurityManagerFactory;
+import org.apache.shiro.mgt.SecurityManager;
+import org.apache.shiro.subject.Subject;
+import org.apache.shiro.util.Factory;
 import org.objectweb.proactive.Body;
 import org.objectweb.proactive.RunActive;
 import org.objectweb.proactive.Service;
@@ -51,6 +57,10 @@ import org.ow2.proactive.authentication.crypto.Credentials;
  * @since ProActive Scheduling 0.9.1
  */
 public abstract class AuthenticationImpl implements Authentication, RunActive {
+
+    // Shiro's security manager and current executing subject
+    SecurityManager securityManager;
+    Subject currentUser;
 
     /** Activation is used to control authentication during scheduling initialization */
     private boolean activated = false;
@@ -86,17 +96,24 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
      * public key is used to encrypt credentials to make the old deprecated API still compatible,
      * private key is used to decrypt credentials in the new API.
      * 
-     * @param jaasPath path to the jaas configuration file
+     * @param shiroPath path to the jaas configuration file
      * @param privPath path to the private key file
      * @param pubPath path to the public key file
      * 
      */
-    public AuthenticationImpl(String jaasPath, String privPath, String pubPath) {
-        File jaasFile = new File(jaasPath);
-        if (jaasFile.exists() && !jaasFile.isDirectory()) {
-            System.setProperty("java.security.auth.login.config", jaasPath);
+    public AuthenticationImpl(String shiroPath, String privPath, String pubPath) {
+        File shiroFile = new File(shiroPath);
+        if (shiroFile.exists() && !shiroFile.isDirectory()) {
+            // Setup Shiro security manager from ini file
+            Factory<SecurityManager> factory = new IniSecurityManagerFactory(shiroFile.getPath());
+            securityManager = factory.getInstance();
+            SecurityUtils.setSecurityManager(securityManager);
+            //System.setProperty("java.security.auth.login.config", shiroPath);
+
+            // Get the currently executing user:
+            currentUser = SecurityUtils.getSubject();
         } else {
-            throw new RuntimeException("Could not find Jaas configuration at: " + jaasPath);
+            throw new RuntimeException("Could not find Jaas configuration at: " + shiroPath);
         }
 
         File privFile = new File(privPath);
@@ -121,47 +138,54 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
      * @return the name of the user logged
      * @throws LoginException if username or password is incorrect.
      */
-    public Subject authenticate(Credentials cred) throws LoginException {
+    public Subject authenticate(Credentials cred) throws AuthenticationException {
 
         if (activated == false) {
-            throw new LoginException("Authentication active object is not activated.");
+            throw new AuthenticationException("Authentication active object is not activated.");
         }
 
-        CredData credentials = null;
-        try {
-            credentials = cred.decrypt(privateKeyPath);
-        } catch (KeyException e) {
-            throw new LoginException("Could not decrypt credentials: " + e);
+        // Shiro has a global vision of a 'Subject'
+        if (!currentUser.isAuthenticated()) {
+
+            CredData credentials = null;
+            try {
+                credentials = cred.decrypt(privateKeyPath);
+            } catch (KeyException e) {
+                throw new AuthenticationException("Could not decrypt credentials: " + e);
+            }
+            String username = credentials.getLogin();
+            String password = credentials.getPassword();
+
+            if (username == null || username.equals("")) {
+                throw new AuthenticationException("Bad user name (user is null or empty)");
+            }
+
+            // Shiro login; TODO: check the login type and callback (getLoginMethod(), new NoCallbackHandler(params))
+            UsernamePasswordToken token = new UsernamePasswordToken(username, password);
+            token.setRememberMe(true);
+
+            try {
+                currentUser.login(token);
+                getLogger().info("User [" + currentUser.getPrincipal() + "] logged in successfully.");
+                return currentUser;
+            } catch (UnknownAccountException uae) {
+                getLogger().info("There is no user with username of " + token.getPrincipal());
+                throw new AuthenticationException("Authentication failed");
+            } catch (IncorrectCredentialsException ice) {
+                getLogger().info("Password for account " + token.getPrincipal() + " was incorrect!");
+                throw new AuthenticationException("Authentication failed");
+            } catch (LockedAccountException lae) {
+                getLogger().info("The account for username " + token.getPrincipal() + " is locked.  " +
+                        "Please contact your administrator to unlock it.");
+                throw new AuthenticationException("Authentication failed");
+            }
+            catch (Exception ae) {
+                //unexpected condition?  error?
+                throw new AuthenticationException("Authentication failed");
+            }
         }
-        String username = credentials.getLogin();
-        String password = credentials.getPassword();
-
-        if (username == null || username.equals("")) {
-            throw new LoginException("Bad user name (user is null or empty)");
-        }
-
-        try {
-            // Verify that this user//password can connect to this existing scheduler
-            getLogger().info(username + " is trying to connect");
-
-            Map<String, Object> params = new HashMap<>(4);
-            //user name to check
-            params.put("username", username);
-            //password to check
-            params.put("pw", password);
-
-            //Load LoginContext according to login method defined in jaas.config
-            LoginContext lc = new LoginContext(getLoginMethod(), new NoCallbackHandler(params));
-
-            lc.login();
-            getLogger().info("User " + username + " logged successfully");
-
-            return lc.getSubject();
-        } catch (LoginException e) {
-            getLogger().info(e.getMessage());
-            //Nature of exception is hidden for user, we don't want to inform
-            //user about the reason of non authentication
-            throw new LoginException("Authentication failed");
+        else {
+            return currentUser;
         }
     }
 

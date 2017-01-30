@@ -26,10 +26,10 @@
 package org.ow2.proactive.resourcemanager.rmnode;
 
 import java.io.Serializable;
-import java.security.Permission;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.shiro.authz.Permission;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.core.node.NodeException;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;

@@ -30,10 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.ow2.proactive.authentication.principals.GroupNamePrincipal;
-import org.ow2.proactive.authentication.principals.IdentityPrincipal;
-import org.ow2.proactive.authentication.principals.TokenPrincipal;
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
+import org.apache.shiro.subject.PrincipalCollection;
 import org.ow2.proactive.resourcemanager.authentication.Client;
 
 
@@ -159,10 +156,14 @@ public class AccessType implements Serializable {
     /**
      * Returns a set of identity principals for the specified user depending
      * on the node source access type.
+     *
+     * TODO: Method signature changed from JAAS: Set<Principal> to Shiro: PrincipalCollection
+     *
      */
-    public Set<? extends IdentityPrincipal> getIdentityPrincipals(Client client) {
+    public PrincipalCollection getIdentityPrincipals(Client client) {
 
-        if (this.equals(AccessType.ME) || this.equals(AccessType.PROVIDER)) {
+        // TODO: all the (USER || GROUP) logic must disappear with Shiro
+        /*if (this.equals(AccessType.ME) || this.equals(AccessType.PROVIDER)) {
             // USER
             return client.getSubject().getPrincipals(UserNamePrincipal.class);
         } else if (this.equals(AccessType.MY_GROUPS) || this.equals(AccessType.PROVIDER_GROUPS)) {
@@ -186,7 +187,9 @@ public class AccessType implements Serializable {
                 identities.add(new TokenPrincipal(token));
             }
         }
-        return identities;
+        return identities;*/
+
+        return client.getSubject().getPrincipals();
     }
 
     /**

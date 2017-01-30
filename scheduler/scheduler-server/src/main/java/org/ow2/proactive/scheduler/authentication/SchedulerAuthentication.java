@@ -28,16 +28,15 @@ package org.ow2.proactive.scheduler.authentication;
 import java.io.IOException;
 
 import javax.management.JMException;
-import javax.security.auth.Subject;
 import javax.security.auth.login.LoginException;
 
 import org.apache.log4j.Logger;
+import org.apache.shiro.subject.Subject;
 import org.objectweb.proactive.ActiveObjectCreationException;
 import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.extensions.annotation.ActiveObject;
 import org.ow2.proactive.authentication.AuthenticationImpl;
 import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
 import org.ow2.proactive.scheduler.common.Scheduler;
 import org.ow2.proactive.scheduler.common.SchedulerAuthenticationInterface;
@@ -93,8 +92,8 @@ public class SchedulerAuthentication extends AuthenticationImpl implements Sched
     public Scheduler login(Credentials cred) throws LoginException, AlreadyConnectedException {
         Subject subject = authenticate(cred);
 
-        UserNamePrincipal unPrincipal = subject.getPrincipals(UserNamePrincipal.class).iterator().next();
-        String user = unPrincipal.getName();
+        // TODO: removed 'UserNamePrincipal.class' from getPrincipals method
+        String user = (String) subject.getPrincipal();
 
         logger.info("user : " + user);
         // add this user to the scheduler front-end

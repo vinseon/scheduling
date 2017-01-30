@@ -57,6 +57,8 @@ import org.ow2.proactive.authentication.principals.IdentityPrincipal;
  * PrincipalPermission(GroupPrincipal("users")) or
  * PrincipalPermission(none) it is authorized to execute it.
  *
+ * TODO: Not needed anymore using Shiro
+ *
  */
 public class PrincipalPermission extends ClientPermission {
 

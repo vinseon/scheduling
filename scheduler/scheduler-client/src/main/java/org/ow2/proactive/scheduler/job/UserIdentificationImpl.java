@@ -25,14 +25,13 @@
  */
 package org.ow2.proactive.scheduler.job;
 
-import java.security.Permission;
-import java.security.PrivilegedAction;
 import java.util.HashSet;
 import java.util.TimerTask;
 
-import javax.security.auth.Subject;
-
-import org.ow2.proactive.authentication.principals.UserNamePrincipal;
+import org.apache.shiro.authz.AuthorizationException;
+import org.apache.shiro.authz.Permission;
+import org.apache.shiro.subject.SimplePrincipalCollection;
+import org.apache.shiro.subject.Subject;
 import org.ow2.proactive.scheduler.common.SchedulerEvent;
 import org.ow2.proactive.scheduler.common.exception.PermissionException;
 import org.ow2.proactive.scheduler.common.job.UserIdentification;
@@ -74,7 +73,7 @@ public class UserIdentificationImpl extends UserIdentification {
     //must be transient because useless on user side and TimerTask is not serializable
     private transient TimerTask session;
 
-    /**
+    /** TODO: Build a shiro Subject using 'iniRealm' (replace UserNamePrincipal(username))
      * Constructor of user identification using user name.
      *
      * @param username the user name.
@@ -82,8 +81,11 @@ public class UserIdentificationImpl extends UserIdentification {
     public UserIdentificationImpl(String username) {
         this.username = username;
         this.connectionTime = System.currentTimeMillis();
-        this.subject = new Subject();
-        this.subject.getPrincipals().add(new UserNamePrincipal(username));
+        this.subject = new Subject.Builder().principals(
+            new SimplePrincipalCollection((Object)username,"inirealm")
+        ).authenticated(false).buildSubject();
+        //this.subject = new Subject();
+        //this.subject.getPrincipals().add(new UserNamePrincipal(username));
     }
 
     /**
@@ -256,16 +258,9 @@ public class UserIdentificationImpl extends UserIdentification {
      */
     public boolean checkPermission(final Permission permission, String errorMessage) throws PermissionException {
         try {
-            Subject.doAsPrivileged(subject, new PrivilegedAction<Object>() {
-                public Object run() {
-                    SecurityManager sm = System.getSecurityManager();
-                    if (sm != null) {
-                        sm.checkPermission(permission);
-                    }
-                    return null;
-                }
-            }, null);
-        } catch (SecurityException ex) {
+            // Check permission through Shiro
+            subject.checkPermission(permission);
+        } catch (AuthorizationException ex) {
             throw new PermissionException(errorMessage);
         }
 
