@@ -43,7 +43,6 @@ import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.core.UniqueID;
 import org.objectweb.proactive.core.mop.MOP;
 import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.permissions.MethodCallPermission;
 import org.ow2.proactive.scheduler.common.NotificationData;
 import org.ow2.proactive.scheduler.common.SchedulerEvent;
 import org.ow2.proactive.scheduler.common.SchedulerEventListener;
@@ -361,7 +360,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
      */
     synchronized void handleOnlyMyJobsPermission(boolean myOnly, UserIdentificationImpl ui, String errorMessage)
             throws PermissionException {
-        ui.checkPermission(new WildcardPermission("handleOnlyMyJobs:" + myOnly),
+        ui.checkPermission(new WildcardPermission("handleJobs:" + (myOnly ? "self" : "all")),
                            ui.getUsername() + " does not have permissions to handle other users jobs (" + errorMessage +
                                                                    ")");
     }
@@ -450,7 +449,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         // verifying that the user has right to set the given priority to his
         // job.
         try {
-            ident.checkPermission(new WildcardPermission("changePriority:" + job.getPriority().ordinal()),
+            ident.checkPermission(new WildcardPermission("jobsPriority:" + job.getPriority().toString()),
                                   ident.getUsername() + " does not have rights to set job priority " +
                                                                                              job.getPriority());
         } catch (PermissionException ex) {
@@ -481,6 +480,15 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         }
     }
 
+    /**
+     * TODO: all local 'checkPermission' calls go to this method which rely on basic methodCall permission
+     *
+     * @param methodName
+     * @param permissionMsg
+     * @return
+     * @throws NotConnectedException
+     * @throws PermissionException
+     */
     synchronized ListeningUser checkPermissionReturningListeningUser(String methodName, String permissionMsg)
             throws NotConnectedException, PermissionException {
         UniqueID id = checkAccess();
@@ -489,8 +497,8 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         // renew session for this user
         renewUserSession(id, ident.getUser());
 
-        final String fullMethodName = SchedulerFrontend.class.getName() + "." + methodName;
-        final MethodCallPermission methodCallPermission = new MethodCallPermission(fullMethodName);
+        //final String fullMethodName = SchedulerFrontend.class.getName() + "." + methodName;
+        //final MethodCallPermission methodCallPermission = new MethodCallPermission(fullMethodName);
 
         try {
             ident.getUser().checkPermission(new WildcardPermission("methodCall:" + methodName), permissionMsg);
@@ -714,7 +722,7 @@ class SchedulerFrontendState implements SchedulerStateUpdate {
         renewUserSession(id, ident);
 
         try {
-            ident.checkPermission(new WildcardPermission("connectToRessourceManager"),
+            ident.checkPermission(new WildcardPermission("rmConnect"),
                                   ident.getUsername() + " does not have permissions to change RM in the scheduler");
         } catch (PermissionException ex) {
             logger.info(ex.getMessage());

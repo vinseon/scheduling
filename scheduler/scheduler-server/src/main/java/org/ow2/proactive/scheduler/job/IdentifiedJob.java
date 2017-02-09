@@ -98,7 +98,7 @@ public class IdentifiedJob implements Serializable {
         //                                                                     .getPrincipals(UserNamePrincipal.class));
         try {
             //check method call
-            userId.checkPermission(new WildcardPermission("job"), "");
+            userId.checkPermission(new WildcardPermission("manageJob:" + jobId), "");
         } catch (PermissionException ex) {
             return false;
         }
