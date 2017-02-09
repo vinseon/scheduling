@@ -27,15 +27,17 @@ package org.ow2.proactive.jmx;
 
 import java.security.Principal;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import javax.management.remote.JMXAuthenticator;
 
 import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.subject.Subject;
 import org.ow2.proactive.authentication.Authentication;
+import org.ow2.proactive.authentication.SerializableShiroSubjectWrapper;
 import org.ow2.proactive.authentication.crypto.CredData;
 import org.ow2.proactive.authentication.crypto.Credentials;
+import org.ow2.proactive.authentication.principals.IdentityPrincipal;
 
 import com.google.common.collect.Sets;
 
@@ -103,21 +105,26 @@ public final class JMXAuthenticatorImpl implements JMXAuthenticator {
             throw new SecurityException("Invalid credentials");
         }
         try {
-            // Create an mutable JAAS subject on the curent access control context and stores the Shiro subject
-            // in the JAAS subject's private credentials set
-            // INFO: Look at previous Subject creation method in UserIdentificationImpl class I guess :)
-            // TODO: Later on, implement a LoginModule which is actually a wrapper around the Shiro's Authenticator interface (extended by SecurityManagers)
-            Subject s = this.authentication.authenticate(internalCredentials);
-            // TODO: Should disappear when understood!
             if (permissionChecker != null) {
                 boolean allowed = permissionChecker.checkPermission(internalCredentials);
                 if (!allowed) {
                     throw new SecurityException("Permission denied");
                 }
             }
-            Set<Subject> privJaasSubjectCreds = new HashSet<>();
-            privJaasSubjectCreds.add(s);
-            return new javax.security.auth.Subject(false, Sets.<Principal>newHashSet(), Sets.newHashSet(), privJaasSubjectCreds);
+
+            // TODO: Most/Only important thing is the Principals set, we should create our own generic principal class
+            // But for now we map Shiro principals to an IdentityPrincipal, which is fine as it only contains a String
+            // We also store our Shiro subject wrapper (sertializable) in the JAAS subject's private credentials set
+            // thus we can re-build a full shiro Subject inside the calling classes (ROServerImpl->ROConnection) if necessary
+            SerializableShiroSubjectWrapper shiroSubjectWrapper = this.authentication.authenticate(internalCredentials);
+            Set<SerializableShiroSubjectWrapper> privJaasSubjectCreds = new HashSet<>();
+            Set<Principal> principals = new HashSet<>();
+            Iterator shiroPrincipalsIterator = shiroSubjectWrapper.getSubject().getPrincipals().iterator();
+            while (shiroPrincipalsIterator.hasNext()) {
+                principals.add(new IdentityPrincipal(shiroPrincipalsIterator.next().toString()));
+            }
+            privJaasSubjectCreds.add(shiroSubjectWrapper);
+            return new javax.security.auth.Subject(false, principals, Sets.newHashSet(), privJaasSubjectCreds);
         } catch (AuthenticationException e) {
             throw new SecurityException("Unable to authenticate " + username);
         }
