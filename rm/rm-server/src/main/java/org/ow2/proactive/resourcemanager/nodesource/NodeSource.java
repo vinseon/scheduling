@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -49,8 +48,6 @@ import org.objectweb.proactive.core.node.NodeFactory;
 import org.objectweb.proactive.core.util.wrapper.BooleanWrapper;
 import org.objectweb.proactive.core.util.wrapper.IntWrapper;
 import org.objectweb.proactive.extensions.annotation.ActiveObject;
-import org.ow2.proactive.authentication.principals.IdentityPrincipal;
-import org.ow2.proactive.authentication.principals.TokenPrincipal;
 import org.ow2.proactive.resourcemanager.authentication.Client;
 import org.ow2.proactive.resourcemanager.common.event.RMEventType;
 import org.ow2.proactive.resourcemanager.common.event.RMNodeEvent;
@@ -67,7 +64,6 @@ import org.ow2.proactive.resourcemanager.rmnode.AbstractRMNode;
 import org.ow2.proactive.resourcemanager.rmnode.RMDeployingNode;
 import org.ow2.proactive.resourcemanager.rmnode.RMNode;
 import org.ow2.proactive.resourcemanager.rmnode.RMNodeImpl;
-import org.ow2.proactive.resourcemanager.utils.RMNodeStarter;
 
 
 /**
@@ -383,6 +379,9 @@ public class NodeSource implements InitActive, RunActive {
         // the provider principals will be taken or
         // ME/MY_GROUPS (ns creator/ns creator groups) and in this case
         // creator's principals will be used
+
+        // TODO: PROVIDER & PROVIDER_GROUPS access types are deprecated, actual types must be either ME or ALL
+        /*
         Client permissionOwner = administrator;
         if (nodeUserAccessType.equals(AccessType.PROVIDER) || nodeUserAccessType.equals(AccessType.PROVIDER_GROUPS)) {
             permissionOwner = provider;
@@ -407,13 +406,15 @@ public class NodeSource implements InitActive, RunActive {
         } catch (Exception e) {
             throw new AddingNodesException(e);
         }
+        rmnode.setProtectedByToken(tokenInNode || tokenInNodeSource);
+        */
 
-        // TODO: nodeAccess permission managed by Shiro (?need to replace getName by getUrl to ensure uniq Principal?)
+        // TODO: need to replace getName by getUrl to ensure uniq Principal??
         //PrincipalPermission nodeAccessPermission = new PrincipalPermission(node.getNodeInformation().getURL(),
         //                                                                   principals);
         RMNodeImpl rmnode = new RMNodeImpl(node, stub, provider, new WildcardPermission("nodeAccess:" + node.getNodeInformation().getName()));
 
-        rmnode.setProtectedByToken(tokenInNode || tokenInNodeSource);
+        rmnode.setProtectedByToken(false);
         return rmnode;
     }
 
