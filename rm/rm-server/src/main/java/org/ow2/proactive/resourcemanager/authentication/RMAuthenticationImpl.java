@@ -80,7 +80,7 @@ public class RMAuthenticationImpl extends AuthenticationImpl implements RMAuthen
      * Performs user authentication
      */
     public ResourceManager login(Credentials cred) throws LoginException {
-        Client client = new Client(authenticate(cred), true);
+        Client client = new Client(authenticate(cred).getSubject(), true);
         client.setCredentials(cred);
 
         if (RMCore.clients.containsKey(client.getId())) {

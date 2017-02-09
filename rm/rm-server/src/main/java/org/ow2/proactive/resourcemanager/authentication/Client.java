@@ -37,6 +37,7 @@ import org.objectweb.proactive.core.body.proxy.BodyProxy;
 import org.objectweb.proactive.core.body.request.Request;
 import org.objectweb.proactive.core.mop.Proxy;
 import org.objectweb.proactive.core.mop.StubObject;
+import org.ow2.proactive.authentication.SerializableShiroSubjectWrapper;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.resourcemanager.core.history.UserHistory;
 
@@ -57,7 +58,7 @@ import org.ow2.proactive.resourcemanager.core.history.UserHistory;
 public class Client implements Serializable {
 
     /** The security entity that represents this client */
-    private final Subject subject;
+    private SerializableShiroSubjectWrapper subjectWrapper;
 
     /** Defines if this client has to be pinged */
     private final boolean pingable;
@@ -82,7 +83,7 @@ public class Client implements Serializable {
     private Credentials credentials;
 
     public Client() {
-        this.subject = null;
+        this.subjectWrapper = null;
         this.pingable = false;
     }
 
@@ -92,12 +93,12 @@ public class Client implements Serializable {
      * @param pingable defines if client has to be pinged
      */
     public Client(Subject subject, boolean pingable) {
-        this.subject = subject;
+        this.subjectWrapper = new SerializableShiroSubjectWrapper(subject);
         this.pingable = pingable;
 
         if (subject != null) {
             // replaced getPrincipals(UserNamePrincipal.class) by Shiro Principal (should return a String for now)
-            this.name = (String) subject.getPrincipal();
+            this.name = subject.getPrincipal().toString();
         }
         if (pingable) {
             Request r = PAActiveObject.getContext().getCurrentRequest();
@@ -222,7 +223,7 @@ public class Client implements Serializable {
      * @return the subject of the client
      */
     public Subject getSubject() {
-        return subject;
+        return subjectWrapper == null ? null : subjectWrapper.getSubject();
     }
 
     /**
@@ -233,7 +234,7 @@ public class Client implements Serializable {
     public boolean checkPermission(final Permission permission, String errorMessage) {
         try {
             // Check permission through Shiro
-            subject.checkPermission(permission);
+            subjectWrapper.getSubject().checkPermission(permission);
         } catch (AuthorizationException ex) {
             throw new SecurityException(errorMessage);
         }

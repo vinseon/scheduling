@@ -28,10 +28,11 @@ package org.ow2.proactive.scheduler.job;
 import java.util.HashSet;
 import java.util.TimerTask;
 
+import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.authz.AuthorizationException;
 import org.apache.shiro.authz.Permission;
-import org.apache.shiro.subject.SimplePrincipalCollection;
 import org.apache.shiro.subject.Subject;
+import org.ow2.proactive.authentication.SerializableShiroSubjectWrapper;
 import org.ow2.proactive.scheduler.common.SchedulerEvent;
 import org.ow2.proactive.scheduler.common.exception.PermissionException;
 import org.ow2.proactive.scheduler.common.job.UserIdentification;
@@ -49,7 +50,7 @@ public class UserIdentificationImpl extends UserIdentification {
     private String username;
 
     /** user subject */
-    private Subject subject;
+    private SerializableShiroSubjectWrapper subjectWrapper;
 
     /** Number of submit for this user */
     private int submitNumber = 0;
@@ -81,9 +82,12 @@ public class UserIdentificationImpl extends UserIdentification {
     public UserIdentificationImpl(String username) {
         this.username = username;
         this.connectionTime = System.currentTimeMillis();
+        this.subjectWrapper = new SerializableShiroSubjectWrapper(SecurityUtils.getSubject());
+        /*
         this.subject = new Subject.Builder().principals(
-            new SimplePrincipalCollection((Object)username,"inirealm")
+            new SimplePrincipalCollection((Object)username,"iniRealm")
         ).authenticated(false).buildSubject();
+        */
         //this.subject = new Subject();
         //this.subject.getPrincipals().add(new UserNamePrincipal(username));
     }
@@ -96,7 +100,7 @@ public class UserIdentificationImpl extends UserIdentification {
      */
     public UserIdentificationImpl(String username, Subject subject) {
         this.username = username;
-        this.subject = subject;
+        this.subjectWrapper = new SerializableShiroSubjectWrapper(subject);
         this.connectionTime = System.currentTimeMillis();
     }
 
@@ -259,7 +263,7 @@ public class UserIdentificationImpl extends UserIdentification {
     public boolean checkPermission(final Permission permission, String errorMessage) throws PermissionException {
         try {
             // Check permission through Shiro
-            subject.checkPermission(permission);
+            subjectWrapper.getSubject().checkPermission(permission);
         } catch (AuthorizationException ex) {
             throw new PermissionException(errorMessage);
         }
@@ -272,6 +276,6 @@ public class UserIdentificationImpl extends UserIdentification {
      * @return user's subject
      */
     public Subject getSubject() {
-        return subject;
+        return subjectWrapper.getSubject();
     }
 }

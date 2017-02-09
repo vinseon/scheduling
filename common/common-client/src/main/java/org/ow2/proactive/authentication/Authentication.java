@@ -32,7 +32,6 @@ import javax.management.JMException;
 import javax.security.auth.login.LoginException;
 
 import org.apache.shiro.authc.AuthenticationException;
-import org.apache.shiro.subject.Subject;
 import org.ow2.proactive.authentication.crypto.Credentials;
 import org.ow2.proactive.jmx.naming.JMXTransportProtocol;
 
@@ -93,6 +92,6 @@ public interface Authentication extends Loggable, Serializable {
      * @return the name of the user logged
      * @throws LoginException if username or password is incorrect.
      */
-    Subject authenticate(Credentials cred) throws AuthenticationException;
+    SerializableShiroSubjectWrapper authenticate(Credentials cred) throws AuthenticationException;
 
 }

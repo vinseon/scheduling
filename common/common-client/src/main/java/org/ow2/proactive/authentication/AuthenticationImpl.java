@@ -85,8 +85,7 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
     /**
      * Empty constructor
      */
-    public AuthenticationImpl() {
-    }
+    public AuthenticationImpl() {}
 
     /**
      * Default constructor
@@ -108,9 +107,8 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
             Factory<SecurityManager> factory = new IniSecurityManagerFactory(shiroFile.getPath());
             securityManager = factory.getInstance();
             SecurityUtils.setSecurityManager(securityManager);
-            //System.setProperty("java.security.auth.login.config", shiroPath);
 
-            // Get the currently executing user:
+            // Get the currently executing user
             currentUser = SecurityUtils.getSubject();
         } else {
             throw new RuntimeException("Could not find Jaas configuration at: " + shiroPath);
@@ -138,13 +136,12 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
      * @return the name of the user logged
      * @throws LoginException if username or password is incorrect.
      */
-    public Subject authenticate(Credentials cred) throws AuthenticationException {
+    public SerializableShiroSubjectWrapper authenticate(Credentials cred) throws AuthenticationException {
 
         if (activated == false) {
             throw new AuthenticationException("Authentication active object is not activated.");
         }
 
-        // Shiro has a global vision of a 'Subject'
         if (!currentUser.isAuthenticated()) {
 
             CredData credentials = null;
@@ -160,14 +157,14 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
                 throw new AuthenticationException("Bad user name (user is null or empty)");
             }
 
-            // Shiro login; TODO: check the login type and callback (getLoginMethod(), new NoCallbackHandler(params))
+            // TODO: check the login type (getLoginMethod()) and retrieve the desired Realm to authenticate with
             UsernamePasswordToken token = new UsernamePasswordToken(username, password);
             token.setRememberMe(true);
 
             try {
                 currentUser.login(token);
                 getLogger().info("User [" + currentUser.getPrincipal() + "] logged in successfully.");
-                return currentUser;
+                return new SerializableShiroSubjectWrapper(currentUser);
             } catch (UnknownAccountException uae) {
                 getLogger().info("There is no user with username of " + token.getPrincipal());
                 throw new AuthenticationException("Authentication failed");
@@ -185,7 +182,7 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
             }
         }
         else {
-            return currentUser;
+            return new SerializableShiroSubjectWrapper(currentUser);
         }
     }
 
@@ -258,8 +255,6 @@ public abstract class AuthenticationImpl implements Authentication, RunActive {
             } catch (InterruptedException e) {
                 getLogger().warn("runActivity interrupted", e);
             }
-
         }
     }
-
 }

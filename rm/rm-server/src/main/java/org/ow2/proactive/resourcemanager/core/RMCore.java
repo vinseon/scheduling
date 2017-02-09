@@ -215,6 +215,7 @@ public class RMCore implements ResourceManager, InitActive, RunActive {
     private Client caller = null;
 
     /** Any local active object (including a half body) will act as the same single client */
+    // TODO: why subject is null (++ SecurityManager not accessible here!)?
     private static final Client localClient = new Client(null, false);
 
     /**

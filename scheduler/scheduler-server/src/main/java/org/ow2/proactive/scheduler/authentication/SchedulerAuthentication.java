@@ -90,7 +90,7 @@ public class SchedulerAuthentication extends AuthenticationImpl implements Sched
      * {@inheritDoc}
      */
     public Scheduler login(Credentials cred) throws LoginException, AlreadyConnectedException {
-        Subject subject = authenticate(cred);
+        Subject subject = authenticate(cred).getSubject();
 
         // TODO: removed 'UserNamePrincipal.class' from getPrincipals method
         String user = (String) subject.getPrincipal();
