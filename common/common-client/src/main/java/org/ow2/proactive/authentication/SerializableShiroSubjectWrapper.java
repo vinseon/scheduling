@@ -28,6 +28,7 @@ package org.ow2.proactive.authentication;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OptionalDataException;
 import java.io.Serializable;
 
 import org.apache.shiro.subject.PrincipalCollection;
@@ -51,6 +52,7 @@ public class SerializableShiroSubjectWrapper implements Serializable {
 
     private void writeObject(ObjectOutputStream out) throws IOException {
         out.defaultWriteObject();
+        if (shiroSubject == null) return;
         out.writeObject(shiroSubject.getPrincipals());
         out.writeObject(shiroSubject.getSession().getId());
         out.writeObject(shiroSubject.getSession().getHost());
@@ -59,13 +61,19 @@ public class SerializableShiroSubjectWrapper implements Serializable {
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        shiroSubject = new Subject.Builder()
-                .principals((PrincipalCollection) in.readObject())
-                .sessionId((Serializable) in.readObject())
-                .host((String) in.readObject())
-                .authenticated(in.readBoolean())
-                .buildSubject();
-        // TODO: attach the subject to the current thread
-        //subject.execute(this);
+        try {
+            shiroSubject = new Subject.Builder()
+                    .principals((PrincipalCollection) in.readObject())
+                    .sessionId((Serializable) in.readObject())
+                    .host((String) in.readObject())
+                    .authenticated(in.readBoolean())
+                    .buildSubject();
+
+            // TODO: attach the subject to the current thread
+            //subject.execute(this);
+        }
+        catch(OptionalDataException exception) {
+            shiroSubject = null;
+        }
     }
 }
