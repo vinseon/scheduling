@@ -1740,11 +1740,11 @@ public class RMCore implements ResourceManager, InitActive, RunActive {
         // an administrator of the node source (creator) or
         // a node provider
         try {
-            // checking if the caller is an administrator
-            caller.checkPermission(nodeSource.getAdminPermission(), errorMessage);
+            // checking if the client is an administrator
+            client.checkPermission(nodeSource.getAdminPermission(), errorMessage);
         } catch (SecurityException ex) {
-            // the caller is not an administrator, so checking if it is a node provider
-            caller.checkPermission(rmnode.getAdminPermission(), errorMessage);
+            // the client is not an administrator, so checking if it is a node provider
+            client.checkPermission(rmnode.getAdminPermission(), errorMessage);
         }
 
         return true;
