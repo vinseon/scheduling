@@ -1730,6 +1730,10 @@ public class RMCore implements ResourceManager, InitActive, RunActive {
      * @return true if the client is an admin, SecurityException otherwise
      */
     private boolean checkNodeAdminPermission(RMNode rmnode, Client client) {
+
+        // Assume that if the client is local then it necessarily has the admin permission
+        if (client.equals(localClient)) return true;
+
         NodeSource nodeSource = rmnode.getNodeSource();
 
         String errorMessage = caller + " is not authorized to remove node " + rmnode.getNodeURL() + " from " +
