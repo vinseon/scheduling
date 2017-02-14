@@ -33,10 +33,8 @@ import java.util.*;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.objectweb.proactive.utils.SecurityManagerConfigurator;
-import org.ow2.proactive.authentication.FileLoginModule;
 import org.ow2.proactive.authentication.crypto.CreateCredentials;
 import org.ow2.proactive.authentication.crypto.Credentials;
-import org.ow2.proactive.authentication.crypto.HybridEncryptionUtil;
 import org.ow2.proactive.scheduler.core.properties.PASchedulerProperties;
 import org.ow2.proactive.utils.Tools;
 
@@ -600,12 +598,12 @@ public class ManageUsers {
 
     private static void updateUserPassword(PublicKey pubKey, String login, String password, Properties props)
             throws KeyException {
-        String encodedPassword;
-        encodedPassword = HybridEncryptionUtil.encryptStringToBase64(password,
-                                                                     pubKey,
-                                                                     FileLoginModule.ENCRYPTED_DATA_SEP);
-        props.put(login, encodedPassword);
-
+        // TODO: disable for now (Shiro upgrade)
+        //String encodedPassword;
+        //encodedPassword = HybridEncryptionUtil.encryptStringToBase64(password,
+        //                                                             pubKey,
+        //                                                             FileLoginModule.ENCRYPTED_DATA_SEP);
+        //props.put(login, encodedPassword);
     }
 
     private static Multimap<String, String> loadGroups(String groupFilePath) throws ManageUsersException {
