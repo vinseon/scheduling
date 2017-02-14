@@ -39,8 +39,6 @@ import org.objectweb.proactive.api.PAActiveObject;
 import org.objectweb.proactive.api.PAFuture;
 import org.objectweb.proactive.core.node.Node;
 import org.objectweb.proactive.utils.NamedThreadFactory;
-import org.ow2.proactive.authentication.principals.TokenPrincipal;
-import org.ow2.proactive.permissions.PrincipalPermission;
 import org.ow2.proactive.resourcemanager.authentication.Client;
 import org.ow2.proactive.resourcemanager.core.RMCore;
 import org.ow2.proactive.resourcemanager.core.properties.PAResourceManagerProperties;
@@ -458,14 +456,15 @@ public abstract class SelectionManager {
         boolean nodeWithTokenRequested = criteria.getNodeAccessToken() != null &&
                                          criteria.getNodeAccessToken().length() > 0;
 
-        TokenPrincipal tokenPrincipal = null;
+        // TODO: Create and add a token to the client's principals (investigate the Shiro's way!)
+        /*TokenPrincipal tokenPrincipal = null;
         if (nodeWithTokenRequested) {
             logger.debug("Node access token specified " + criteria.getNodeAccessToken());
 
             tokenPrincipal = new TokenPrincipal(criteria.getNodeAccessToken());
-            // TODO: Manually add the token to the client's principals (BUT WHY ?) => Shiro works differently (REALMS)
-            //client.getSubject().getPrincipals().add(tokenPrincipal);
+            client.getSubject().getPrincipals().add(tokenPrincipal);
         }
+        */
 
         List<RMNode> filteredList = new ArrayList<>();
         HashSet<Permission> clientPermissions = new HashSet<>();
@@ -492,6 +491,8 @@ public abstract class SelectionManager {
 
             // if client has AllPermissions he still can get a node with any token
             // we will avoid it here
+            // TODO: Set greater permission on tokens
+            /*
             if (nodeWithTokenRequested) {
                 PrincipalPermission perm = (PrincipalPermission) node.getUserPermission();
                 // checking explicitly that node has this token identity
@@ -503,6 +504,7 @@ public abstract class SelectionManager {
                     continue;
                 }
             }
+            */
 
             if (!contains(exclusion, node) && ((inclusion != null) ? inclusion.contains(node.getNodeURL()) : true)) {
                 filteredList.add(node);
