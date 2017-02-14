@@ -27,7 +27,6 @@ package org.ow2.proactive.resourcemanager.selection;
 
 import java.io.File;
 import java.io.Serializable;
-import java.security.Permission;
 import java.util.*;
 import java.util.concurrent.*;
 
