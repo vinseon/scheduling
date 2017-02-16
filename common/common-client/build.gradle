@@ -1,7 +1,7 @@
 dependencies {
     // LibPAM
     //compile group: 'net.sf.jpam', name: 'jpam', version: '1.1'
-    compile 'org.ow2.proactive:libpam4j:1.9-SNAPSHOT'
+    compile 'org.ow2.proactive:libpam4j:1.9-proactive'
 
     compile 'commons-codec:commons-codec:1.10'
     compile 'org.rrd4j:rrd4j:2.2.1'
